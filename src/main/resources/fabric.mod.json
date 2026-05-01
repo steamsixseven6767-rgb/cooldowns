@@ -11,7 +11,6 @@
     "main":   ["com.cooldownhud.CooldownHudMod"],
     "client": ["com.cooldownhud.client.CooldownHudClient"]
   },
-  "mixins": ["cooldownhud.mixins.json"],
   "depends": {
     "fabricloader": ">=0.16.0",
     "fabric-api": "*",
