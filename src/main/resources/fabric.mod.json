@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "cooldownhud",
+  "version": "${version}",
+  "name": "CooldownHUD",
+  "description": "Отображает кулдауны предметов на HUD. Для фантайм серверов.",
+  "authors": ["You"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "main":   ["com.cooldownhud.CooldownHudMod"],
+    "client": ["com.cooldownhud.client.CooldownHudClient"]
+  },
+  "mixins": ["cooldownhud.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "~1.21.4"
+  }
+}
