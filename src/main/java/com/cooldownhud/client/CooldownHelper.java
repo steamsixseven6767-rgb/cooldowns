@@ -2,6 +2,7 @@ package com.cooldownhud.client;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 
 public final class CooldownHelper {
 
@@ -14,13 +15,13 @@ public final class CooldownHelper {
     public static float getProgress(Item item) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null) return 0f;
-        return mc.player.getItemCooldownManager().getCooldownProgress(item, 0f);
+        return mc.player.getItemCooldownManager().getCooldownProgress(new ItemStack(item), 0f);
     }
 
     public static boolean hasCooldown(Item item) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null) return false;
-        return mc.player.getItemCooldownManager().isCoolingDown(item);
+        return mc.player.getItemCooldownManager().isCoolingDown(new ItemStack(item));
     }
 
     public static String formatTicks(int ticks) {
