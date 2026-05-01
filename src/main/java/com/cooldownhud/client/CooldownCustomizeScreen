@@ -1,0 +1,184 @@
+package com.cooldownhud.client;
+
+import com.cooldownhud.config.CooldownConfig;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.SliderWidget;
+import net.minecraft.text.Text;
+
+/**
+ * Panel customization screen.
+ * Sliders for scale, background opacity, accent colour R/G/B.
+ * Toggle for bars.
+ * Button to enter drag mode (opens DragModeScreen).
+ */
+public class CooldownCustomizeScreen extends Screen {
+
+    private static final int PANEL_W = 280;
+    private static final int ROW_H   = 26;
+    private static final int BTN_H   = 18;
+    private static final int PAD     = 12;
+
+    private static final int COL_PANEL  = 0xEE080812;
+    private static final int COL_BORDER = 0xFF2E2E55;
+    private static final int COL_TITLE  = 0xFFDDDDFF;
+    private static final int COL_SUB    = 0xFF6666AA;
+    private static final int COL_SEP    = 0x33FFFFFF;
+    private static final int COL_LBL    = 0xFFAAAAAA;
+
+    private final Screen parent;
+
+    // Keep refs to read current values in render
+    private NamedSlider scaleSlider, opacitySlider, rSlider, gSlider, bSlider;
+
+    public CooldownCustomizeScreen(Screen parent) {
+        super(Text.literal("CooldownHUD — Вид панели"));
+        this.parent = parent;
+    }
+
+    @Override
+    protected void init() {
+        CooldownConfig cfg = CooldownConfig.get();
+        int px = getPanelX();
+        int py = getPanelY();
+        int iw = PANEL_W - PAD * 2;
+
+        int y = py + 36;
+
+        scaleSlider = new NamedSlider(px + PAD, y, iw, 18,
+                "Масштаб", cfg.getHudScale(), 0.5f, 3.0f, "x") {
+            @Override protected void apply(float v) { CooldownConfig.get().setHudScale(v); }
+        };
+        addDrawableChild(scaleSlider);
+        y += ROW_H;
+
+        opacitySlider = new NamedSlider(px + PAD, y, iw, 18,
+                "Фон (прозрачность)", cfg.getBgOpacity(), 0, 255, "") {
+            @Override protected void apply(float v) { CooldownConfig.get().setBgOpacity(Math.round(v)); }
+        };
+        addDrawableChild(opacitySlider);
+        y += ROW_H;
+
+        // Separator label
+        y += 4;
+        ctx_sep_y = y; // saved for render
+        y += 14;
+
+        rSlider = new NamedSlider(px + PAD, y, iw, 18, "Акцент  R", cfg.getAccentR(), 0, 255, "") {
+            @Override protected void apply(float v) { CooldownConfig.get().setAccentR(Math.round(v)); }
+        };
+        addDrawableChild(rSlider);
+        y += ROW_H;
+
+        gSlider = new NamedSlider(px + PAD, y, iw, 18, "Акцент  G", cfg.getAccentG(), 0, 255, "") {
+            @Override protected void apply(float v) { CooldownConfig.get().setAccentG(Math.round(v)); }
+        };
+        addDrawableChild(gSlider);
+        y += ROW_H;
+
+        bSlider = new NamedSlider(px + PAD, y, iw, 18, "Акцент  B", cfg.getAccentB(), 0, 255, "") {
+            @Override protected void apply(float v) { CooldownConfig.get().setAccentB(Math.round(v)); }
+        };
+        addDrawableChild(bSlider);
+        y += ROW_H + 4;
+
+        // Show bars toggle
+        final boolean[] barsState = { cfg.isShowBars() };
+        ButtonWidget barsBtn = ButtonWidget.builder(barsLabel(barsState[0]), b -> {
+            barsState[0] = !barsState[0];
+            CooldownConfig.get().setShowBars(barsState[0]);
+            b.setMessage(barsLabel(barsState[0]));
+        }).dimensions(px + PAD, y, iw, BTN_H).build();
+        addDrawableChild(barsBtn);
+        y += BTN_H + 6;
+
+        // Drag mode button
+        addDrawableChild(ButtonWidget.builder(
+                Text.literal("✥  Переместить панель..."),
+                b -> client.setScreen(new CooldownDragScreen(this))
+        ).dimensions(px + PAD, y, iw, BTN_H).build());
+        y += BTN_H + 6;
+
+        // Save & back
+        addDrawableChild(ButtonWidget.builder(
+                Text.literal("✔  Сохранить и назад"),
+                b -> { CooldownConfig.get().save(); client.setScreen(parent); }
+        ).dimensions(px + PAD, y, iw, BTN_H).build());
+    }
+
+    private int ctx_sep_y = 0;
+
+    @Override
+    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        ctx.fill(0, 0, width, height, 0x99000000);
+
+        int px = getPanelX();
+        int py = getPanelY();
+        int ph = getPanelH();
+
+        ctx.fill(px + 3, py + 3, px + PANEL_W + 3, py + ph + 3, 0x55000000);
+        ctx.fill(px, py, px + PANEL_W, py + ph, COL_PANEL);
+        CooldownSettingsScreen.drawBorder(ctx, px, py, PANEL_W, ph, COL_BORDER);
+
+        ctx.fill(px + 1, py + 1, px + PANEL_W - 1, py + 28, 0x1AFFFFFF);
+        ctx.drawCenteredTextWithShadow(textRenderer, "CooldownHUD", width / 2, py + 5, COL_TITLE);
+        ctx.drawCenteredTextWithShadow(textRenderer, "Вид панели", width / 2, py + 16, COL_SUB);
+        ctx.fill(px + 6, py + 29, px + PANEL_W - 6, py + 30, COL_SEP);
+
+        // Accent color preview swatch
+        if (ctx_sep_y > 0) {
+            CooldownConfig cfg = CooldownConfig.get();
+            int swatchColor = 0xFF000000 | (cfg.getAccentR() << 16) | (cfg.getAccentG() << 8) | cfg.getAccentB();
+            ctx.fill(px + PAD, ctx_sep_y, px + PAD + 12, ctx_sep_y + 12, 0xFF222233);
+            ctx.fill(px + PAD + 1, ctx_sep_y + 1, px + PAD + 11, ctx_sep_y + 11, swatchColor);
+            ctx.drawText(textRenderer, "Цвет акцента (шкала/низкий кд)", px + PAD + 16, ctx_sep_y + 2, COL_LBL, false);
+            ctx.fill(px + 6, ctx_sep_y + 13, px + PANEL_W - 6, ctx_sep_y + 14, COL_SEP);
+        }
+
+        super.render(ctx, mouseX, mouseY, delta);
+    }
+
+    @Override
+    public boolean shouldPause() { return false; }
+
+    private static Text barsLabel(boolean show) {
+        return show ? Text.literal("▬  Шкалы кулдауна: ВКЛ") : Text.literal("▬  Шкалы кулдауна: ВЫКЛ");
+    }
+
+    private int getPanelX() { return (width - PANEL_W) / 2; }
+    private int getPanelY() { return Math.max(2, (height - getPanelH()) / 2); }
+    private int getPanelH() {
+        // 36 header + 2 sliders + 4 + 14 label + 3 sliders + 4 + btn + 6 + btn + 6 + btn + 12
+        return 36 + ROW_H * 2 + 18 + ROW_H * 3 + 4 + (BTN_H + 6) * 3 + PAD;
+    }
+
+    // ---- generic slider ----
+    static abstract class NamedSlider extends SliderWidget {
+        private final String label;
+        private final float min, range;
+        private final String unit;
+
+        NamedSlider(int x, int y, int w, int h, String label, float initial, float min, float max, String unit) {
+            super(x, y, w, h, Text.literal(""), (initial - min) / (max - min));
+            this.label = label;
+            this.min   = min;
+            this.range = max - min;
+            this.unit  = unit;
+            updateMessage();
+        }
+
+        float cur() { return min + (float) value * range; }
+
+        @Override
+        protected void updateMessage() {
+            String fmt = range > 2 ? String.format("%.0f", cur()) : String.format("%.2f", cur());
+            setMessage(Text.literal(label + ":  " + fmt + unit));
+        }
+
+        @Override
+        protected void applyValue() { apply(cur()); }
+
+        protected abstract void apply(float v);
+    }
+}
