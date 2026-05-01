@@ -50,12 +50,13 @@ public class CooldownDragScreen extends Screen {
         CooldownHudRenderer.INSTANCE.renderInScreen(ctx, client);
     }
 
+    // In Minecraft 1.21+ Screen uses mouseClicked instead of mousePressed
     @Override
-    public boolean mousePressed(double mx, double my, int button) {
+    public boolean mouseClicked(double mx, double my, int button) {
         if (button == 0) {
             CooldownHudRenderer.INSTANCE.onMousePress(mx, my);
         }
-        return super.mousePressed(mx, my, button);
+        return super.mouseClicked(mx, my, button);
     }
 
     @Override
