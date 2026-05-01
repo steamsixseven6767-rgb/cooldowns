@@ -5,29 +5,33 @@ import net.minecraft.item.Items;
 
 /**
  * Every item the HUD can track.
- * POTION_HEALING is matched by potion type, not just item id.
+ * expectedTicks — server-side cooldown length (swortix), used as fallback.
  */
 public enum TrackedItem {
 
-    CHARKA      ("Чарка",         "charka",       Items.ENCHANTED_GOLDEN_APPLE),
-    GEPL        ("Гепл",          "gepl",         Items.GOLDEN_APPLE),
-    PERKA       ("Перка",         "perka",        Items.ENDER_PEARL),
-    HORUS       ("Хорус",         "horus",        Items.CHORUS_FRUIT),
-    PLAST       ("Пласт",         "plast",        Items.DRIED_KELP),
-    TRAPKA      ("Трапка",        "trapka",       Items.NETHERITE_SCRAP),
-    DEZOR       ("Дезориентация", "dezor",        Items.ENDER_EYE),
-    SUGAR_DUST  ("Явная пыль",    "sugar_dust",   Items.SUGAR),
-    BOZH_AURA   ("Божья аура",    "bozh_aura",    Items.PHANTOM_MEMBRANE),
-    HEALING     ("Исцеление",     "healing",      Items.POTION);    // matched by PotionContents
+    BOZH_AURA   ("Божья аура",      "bozh_aura",    Items.PHANTOM_MEMBRANE,     300),   // 15s
+    HEALING     ("Исцеление",        "healing",      Items.POTION,               400),   // 20s
+    TRAPKA      ("Трапка",           "trapka",       Items.NETHERITE_SCRAP,      200),   // 10s
+    PLAST       ("Пласт",            "plast",        Items.DRIED_KELP,           500),   // 25s
+    DEZOR       ("Дезориентация",    "dezor",        Items.ENDER_EYE,           1200),   // 60s
+    SUGAR_DUST  ("Явная пыль",       "sugar_dust",   Items.SUGAR,               1200),   // 60s
+    CHARKA      ("Чарка",            "charka",       Items.ENCHANTED_GOLDEN_APPLE, 3000),// 150s
+    GEPL        ("Гепл",             "gepl",         Items.GOLDEN_APPLE,         600),   // 30s
+    HORUS       ("Хорус",            "horus",        Items.CHORUS_FRUIT,         400),   // 20s
+    PERKA       ("Перл",             "perka",        Items.ENDER_PEARL,         1200),   // 60s
+    WIND_CHARGE ("Заряд ветра",      "wind_charge",  Items.WIND_CHARGE,          600);   // 30s
 
     public final String displayName;
-    /** Config key, used in cooldownhud.properties */
+    /** Config key used in cooldownhud.properties */
     public final String configKey;
     public final Item item;
+    /** Expected full cooldown in ticks (server-defined), used as fallback in TickTracker */
+    public final int expectedTicks;
 
-    TrackedItem(String displayName, String configKey, Item item) {
-        this.displayName = displayName;
-        this.configKey   = configKey;
-        this.item        = item;
+    TrackedItem(String displayName, String configKey, Item item, int expectedTicks) {
+        this.displayName   = displayName;
+        this.configKey     = configKey;
+        this.item          = item;
+        this.expectedTicks = expectedTicks;
     }
 }
