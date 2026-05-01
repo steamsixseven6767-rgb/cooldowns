@@ -30,7 +30,12 @@ public class TickTracker {
                 } else if (entry[1] == 0L && now > entry[0]) {
                     float elapsed = now - entry[0];
                     if (progress < 0.999f) {
-                        entry[1] = Math.round(elapsed / (1.0f - progress));
+                        long computed = Math.round(elapsed / (1.0f - progress));
+                        // sanity-check: must be within 50%-200% of expected to accept
+                        long expected = ti.expectedTicks;
+                        if (computed >= expected * 0.5f && computed <= expected * 2.0f) {
+                            entry[1] = computed;
+                        }
                     }
                 }
             } else {
@@ -48,12 +53,18 @@ public class TickTracker {
         if (progress <= 0f) return 0;
 
         long[] entry = data.get(item);
-        if (entry == null || entry[1] == 0L) {
-            return Math.round(progress * 400f);
+        if (entry != null && entry[1] > 0L) {
+            long now = mc.world.getTime();
+            long end = entry[0] + entry[1];
+            return (int) Math.max(0, end - now);
         }
 
-        long now = mc.world.getTime();
-        long end = entry[0] + entry[1];
-        return (int) Math.max(0, end - now);
+        // Fallback: use server-defined expected duration
+        for (TrackedItem ti : TrackedItem.values()) {
+            if (ti.item == item) {
+                return Math.round(progress * ti.expectedTicks);
+            }
+        }
+        return Math.round(progress * 400f);
     }
 }
