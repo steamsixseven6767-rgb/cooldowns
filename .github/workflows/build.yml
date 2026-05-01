@@ -1,4 +1,4 @@
-name: Build Mod
+name: Build CooldownHUD
 
 on:
   push:
@@ -8,8 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -17,14 +19,17 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Grant execute permission
-        run: chmod +x gradlew
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.8'
 
-      - name: Build
-        run: ./gradlew build
+      - name: Build mod
+        run: gradle build
 
-      - name: Upload JAR
+      - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cooldownhud
-          path: build/libs/*.jar
+          name: cooldownhud-mod
+          path: build/libs/cooldownhud-*.jar
+          if-no-files-found: error
