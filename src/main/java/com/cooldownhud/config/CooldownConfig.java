@@ -11,14 +11,12 @@ import java.util.*;
 /**
  * Config stored in .minecraft/config/cooldownhud.properties
  *
- * Keys:
- *   enabled.<configKey>   = true/false
- *   hud.x                 = float  (0-1 normalized screen X)
- *   hud.y                 = float  (0-1 normalized screen Y)
- *   hud.scale             = float  (0.5 – 2.0)
- *   hud.bg_opacity        = int    (0 – 255)
- *   hud.accent_r/g/b      = int    (0 – 255, color of "low cooldown" bar)
- *   hud.show_bars         = true/false
+ *   enabled.<key>      = true/false
+ *   hud.x / hud.y      = float 0-1 (normalised screen position)
+ *   hud.scale          = float 0.5-3.0
+ *   hud.bg_opacity     = int   0-255
+ *   hud.accent_r/g/b   = int   0-255
+ *   hud.show_bars      = true/false
  */
 public class CooldownConfig {
 
@@ -28,27 +26,22 @@ public class CooldownConfig {
     private static final CooldownConfig INSTANCE = new CooldownConfig();
     public static CooldownConfig get() { return INSTANCE; }
 
-    // --- state ---
     private final Map<String, Boolean> itemEnabled = new LinkedHashMap<>();
     private float   hudX      = 0.02f;
     private float   hudY      = 0.75f;
     private float   hudScale  = 1.0f;
-    private int     bgOpacity = 204;    // 0xCC
-    private int     accentR   = 68;     // green by default
+    private int     bgOpacity = 200;
+    private int     accentR   = 68;
     private int     accentG   = 255;
     private int     accentB   = 136;
     private boolean showBars  = true;
 
     private CooldownConfig() {
-        for (TrackedItem t : TrackedItem.values()) {
-            itemEnabled.put(t.configKey, true);
-        }
+        for (TrackedItem t : TrackedItem.values()) itemEnabled.put(t.configKey, true);
         load();
     }
 
-    // ---- public API ----
-
-    public boolean isEnabled(TrackedItem t)        { return itemEnabled.getOrDefault(t.configKey, true); }
+    public boolean isEnabled(TrackedItem t)             { return itemEnabled.getOrDefault(t.configKey, true); }
     public void    setEnabled(TrackedItem t, boolean v) { itemEnabled.put(t.configKey, v); }
 
     public float   getHudX()      { return hudX; }
@@ -69,17 +62,13 @@ public class CooldownConfig {
     public void setAccentB(int v)       { accentB = clamp(v, 0, 255); }
     public void setShowBars(boolean v)  { showBars = v; }
 
-    /** Returns ARGB accent color with given alpha override (0–255). */
+    /** ARGB with given alpha (0-255). */
     public int accentColor(int alpha) {
         return (clamp(alpha, 0, 255) << 24) | (accentR << 16) | (accentG << 8) | accentB;
     }
 
-    /** Returns current BG color as ARGB. */
-    public int bgColor() {
-        return (bgOpacity << 24) | 0x0D0D17;
-    }
-
-    // ---- persistence ----
+    /** Background ARGB. */
+    public int bgColor() { return (bgOpacity << 24) | 0x080812; }
 
     public void save() {
         try (PrintWriter pw = new PrintWriter(new FileWriter(CONFIG_PATH.toFile()))) {
@@ -92,9 +81,8 @@ public class CooldownConfig {
             pw.printf("hud.accent_g=%d%n",   accentG);
             pw.printf("hud.accent_b=%d%n",   accentB);
             pw.printf("hud.show_bars=%b%n",  showBars);
-            for (Map.Entry<String, Boolean> e : itemEnabled.entrySet()) {
+            for (Map.Entry<String, Boolean> e : itemEnabled.entrySet())
                 pw.printf("enabled.%s=%b%n", e.getKey(), e.getValue());
-            }
         } catch (IOException ex) {
             CooldownHudMod.LOGGER.error("[CooldownHUD] Failed to save config", ex);
         }
@@ -116,9 +104,8 @@ public class CooldownConfig {
             showBars  = parseBool (p, "hud.show_bars",  showBars);
             for (TrackedItem t : TrackedItem.values()) {
                 String key = "enabled." + t.configKey;
-                if (p.containsKey(key)) {
+                if (p.containsKey(key))
                     itemEnabled.put(t.configKey, Boolean.parseBoolean(p.getProperty(key)));
-                }
             }
         } catch (IOException ex) {
             CooldownHudMod.LOGGER.error("[CooldownHUD] Failed to load config", ex);
@@ -126,18 +113,13 @@ public class CooldownConfig {
     }
 
     private float   parseFloat(Properties p, String k, float   d) {
-        try { return Float.parseFloat(p.getProperty(k, String.valueOf(d))); }
-        catch (NumberFormatException e) { return d; }
+        try { return Float.parseFloat(p.getProperty(k, String.valueOf(d))); } catch (NumberFormatException e) { return d; }
     }
     private int     parseInt  (Properties p, String k, int     d) {
-        try { return Integer.parseInt(p.getProperty(k, String.valueOf(d))); }
-        catch (NumberFormatException e) { return d; }
+        try { return Integer.parseInt(p.getProperty(k, String.valueOf(d))); } catch (NumberFormatException e) { return d; }
     }
     private boolean parseBool (Properties p, String k, boolean d) {
-        String v = p.getProperty(k);
-        return v != null ? Boolean.parseBoolean(v) : d;
+        String v = p.getProperty(k); return v != null ? Boolean.parseBoolean(v) : d;
     }
-    private static int clamp(int v, int lo, int hi) {
-        return Math.max(lo, Math.min(hi, v));
-    }
+    private static int clamp(int v, int lo, int hi) { return Math.max(lo, Math.min(hi, v)); }
 }
