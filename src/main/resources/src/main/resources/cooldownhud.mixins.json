@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.cooldownhud.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "ItemCooldownManagerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
