@@ -4,217 +4,143 @@ import com.cooldownhud.config.CooldownConfig;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 
+/**
+ * Main settings screen (H).
+ * shouldPause() = false → no Minecraft blur pass → icons render sharp.
+ */
 public class CooldownSettingsScreen extends Screen {
 
-    // Layout
-    private static final int PANEL_W  = 300;
-    private static final int ROW_H    = 22;
-    private static final int BTN_W    = 110;
-    private static final int BTN_H    = 18;
-    private static final int ICON_SZ  = 16;
-    private static final int SLD_H    = 16;
+    private static final int PANEL_W = 260;
+    private static final int ROW_H   = 22;
+    private static final int BTN_W   = 88;
+    private static final int BTN_H   = 16;
+    private static final int ICON_SZ = 16;
+    private static final int PAD     = 10;
 
-    // Colors
-    private static final int COL_BG      = 0xEE0A0A14;
-    private static final int COL_BORDER  = 0x55FFFFFF;
-    private static final int COL_TITLE   = 0xFFFFFFFF;
-    private static final int COL_SUB     = 0xFF888899;
-    private static final int COL_SECTION = 0xFF666677;
+    private static final int COL_PANEL   = 0xEE080812;
+    private static final int COL_BORDER  = 0xFF2E2E55;
+    private static final int COL_TITLE   = 0xFFDDDDFF;
+    private static final int COL_SUB     = 0xFF6666AA;
+    private static final int COL_ROW_ALT = 0x12FFFFFF;
+    private static final int COL_SEP     = 0x33FFFFFF;
 
     private final Screen parent;
 
     public CooldownSettingsScreen(Screen parent) {
-        super(Text.literal("CooldownHUD — Настройки"));
+        super(Text.literal("CooldownHUD"));
         this.parent = parent;
     }
 
     @Override
     protected void init() {
         CooldownConfig cfg = CooldownConfig.get();
-        int panelH = computePanelH();
-        int px = (width  - PANEL_W) / 2;
-        int py = Math.max(4, (height - panelH) / 2);
+        int py = getPanelY();
 
-        int y = py + 36; // below title area
-
-        // ---- Item toggles ----
+        int y = py + 34;
         for (TrackedItem ti : TrackedItem.values()) {
             final TrackedItem item = ti;
-            boolean enabled = cfg.isEnabled(ti);
-
             addDrawableChild(ButtonWidget.builder(
-                    toggleLabel(enabled),
+                    toggleText(cfg.isEnabled(ti)),
                     b -> {
                         boolean now = !CooldownConfig.get().isEnabled(item);
                         CooldownConfig.get().setEnabled(item, now);
-                        b.setMessage(toggleLabel(now));
-                    })
-                .dimensions(px + PANEL_W - BTN_W - 8, y + 2, BTN_W, BTN_H)
-                .build());
-
+                        b.setMessage(toggleText(now));
+                    }
+            ).dimensions(getPanelX() + PANEL_W - BTN_W - PAD, y + 3, BTN_W, BTN_H).build());
             y += ROW_H;
         }
 
-        y += 6; // gap before customization section
+        y += 8;
 
-        // ---- Scale slider ----
-        addDrawableChild(new NamedSlider(
-                px + 8, y, PANEL_W - 16, SLD_H,
-                "Масштаб", cfg.getHudScale(), 0.5f, 3.0f
-        ) {
-            @Override protected void apply(float v) { CooldownConfig.get().setHudScale(v); }
-        });
-        y += SLD_H + 4;
-
-        // ---- BG Opacity slider ----
-        addDrawableChild(new NamedSlider(
-                px + 8, y, PANEL_W - 16, SLD_H,
-                "Прозрачность фона", cfg.getBgOpacity(), 0, 255
-        ) {
-            @Override protected void apply(float v) { CooldownConfig.get().setBgOpacity(Math.round(v)); }
-        });
-        y += SLD_H + 4;
-
-        // ---- Accent R/G/B sliders ----
-        addDrawableChild(new NamedSlider(
-                px + 8, y, PANEL_W - 16, SLD_H,
-                "Цвет (R)", cfg.getAccentR(), 0, 255
-        ) {
-            @Override protected void apply(float v) { CooldownConfig.get().setAccentR(Math.round(v)); }
-        });
-        y += SLD_H + 4;
-
-        addDrawableChild(new NamedSlider(
-                px + 8, y, PANEL_W - 16, SLD_H,
-                "Цвет (G)", cfg.getAccentG(), 0, 255
-        ) {
-            @Override protected void apply(float v) { CooldownConfig.get().setAccentG(Math.round(v)); }
-        });
-        y += SLD_H + 4;
-
-        addDrawableChild(new NamedSlider(
-                px + 8, y, PANEL_W - 16, SLD_H,
-                "Цвет (B)", cfg.getAccentB(), 0, 255
-        ) {
-            @Override protected void apply(float v) { CooldownConfig.get().setAccentB(Math.round(v)); }
-        });
-        y += SLD_H + 6;
-
-        // ---- Show bars toggle ----
         addDrawableChild(ButtonWidget.builder(
-                barsLabel(cfg.isShowBars()),
-                b -> {
-                    boolean now = !CooldownConfig.get().isShowBars();
-                    CooldownConfig.get().setShowBars(now);
-                    b.setMessage(barsLabel(now));
-                })
-            .dimensions(px + (PANEL_W - 140) / 2, y, 140, BTN_H)
-            .build());
+                Text.literal("⚙  Вид панели..."),
+                b -> client.setScreen(new CooldownCustomizeScreen(this))
+        ).dimensions(getPanelX() + PAD, y, PANEL_W - PAD * 2, BTN_H + 2).build());
+
         y += BTN_H + 6;
 
-        // ---- Save & close ----
         addDrawableChild(ButtonWidget.builder(
-                Text.literal("Сохранить и закрыть"),
-                b -> {
-                    CooldownConfig.get().save();
-                    this.client.setScreen(parent);
-                })
-            .dimensions(px + (PANEL_W - 160) / 2, y, 160, BTN_H)
-            .build());
+                Text.literal("✔  Сохранить и закрыть"),
+                b -> { CooldownConfig.get().save(); client.setScreen(parent); }
+        ).dimensions(getPanelX() + PAD, y, PANEL_W - PAD * 2, BTN_H + 2).build());
     }
 
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        renderBackground(ctx, mouseX, mouseY, delta);
+        // Skip renderBackground() — that call triggers the blur pass.
+        // We do our own dim instead.
+        ctx.fill(0, 0, width, height, 0x99000000);
 
-        int panelH = computePanelH();
-        int px = (width  - PANEL_W) / 2;
-        int py = Math.max(4, (height - panelH) / 2);
+        int px = getPanelX();
+        int py = getPanelY();
+        int ph = getPanelH();
 
-        // Panel BG + border
-        ctx.fill(px, py, px + PANEL_W, py + panelH, COL_BG);
-        ctx.fill(px,              py,              px + PANEL_W,     py + 1,           COL_BORDER);
-        ctx.fill(px,              py + panelH - 1, px + PANEL_W,     py + panelH,      COL_BORDER);
-        ctx.fill(px,              py,              px + 1,           py + panelH,      COL_BORDER);
-        ctx.fill(px + PANEL_W - 1, py,             px + PANEL_W,     py + panelH,      COL_BORDER);
+        // Shadow
+        ctx.fill(px + 3, py + 3, px + PANEL_W + 3, py + ph + 3, 0x55000000);
+        // Panel
+        ctx.fill(px, py, px + PANEL_W, py + ph, COL_PANEL);
+        drawBorder(ctx, px, py, PANEL_W, ph, COL_BORDER);
 
-        // Title
-        ctx.drawCenteredTextWithShadow(textRenderer, "CooldownHUD", width / 2, py + 8, COL_TITLE);
-        ctx.drawCenteredTextWithShadow(textRenderer, "Настройки", width / 2, py + 18, COL_SUB);
-        ctx.fill(px + 8, py + 30, px + PANEL_W - 8, py + 31, COL_BORDER);
+        // Title bar
+        ctx.fill(px + 1, py + 1, px + PANEL_W - 1, py + 27, 0x1AFFFFFF);
+        ctx.drawCenteredTextWithShadow(textRenderer, "CooldownHUD", width / 2, py + 5, COL_TITLE);
+        ctx.drawCenteredTextWithShadow(textRenderer, "Настройки предметов", width / 2, py + 16, COL_SUB);
+        ctx.fill(px + 6, py + 28, px + PANEL_W - 6, py + 29, COL_SEP);
 
-        // Item rows: icon + name
-        int y = py + 36;
-        for (TrackedItem ti : TrackedItem.values()) {
-            // Draw item icon directly — no blur because we're outside a Screen's item rendering quirk
-            ctx.drawItem(new ItemStack(ti.item), px + 8, y + 2);
-            ctx.drawText(textRenderer, ti.displayName, px + 8 + ICON_SZ + 4, y + 6, COL_TITLE, false);
+        // Item rows
+        TrackedItem[] items = TrackedItem.values();
+        int y = py + 34;
+        for (int i = 0; i < items.length; i++) {
+            TrackedItem ti = items[i];
+            if (i % 2 == 0) ctx.fill(px + 1, y, px + PANEL_W - 1, y + ROW_H, COL_ROW_ALT);
+
+            // Icon (no blur because shouldPause=false means no blur shader active)
+            ctx.drawItem(new ItemStack(ti.item), px + PAD, y + 3);
+            ctx.drawText(textRenderer, ti.displayName, px + PAD + ICON_SZ + 4, y + 7, 0xFFEEEEFF, false);
+
+            // Colored toggle bg overlay (drawn behind the vanilla button)
+            boolean on = CooldownConfig.get().isEnabled(ti);
+            int bx = px + PANEL_W - BTN_W - PAD;
+            int by = y + 3;
+            ctx.fill(bx + 1, by + 1, bx + BTN_W - 1, by + BTN_H - 1,
+                    on ? 0xCC1A3A1A : 0xCC3A1A1A);
+            drawBorder(ctx, bx, by, BTN_W, BTN_H,
+                    on ? 0xFF44AA44 : 0xFFAA4444);
+
             y += ROW_H;
         }
 
-        y += 6;
+        super.render(ctx, mouseX, mouseY, delta); // draws buttons on top
+    }
 
-        // Section label for customization
-        ctx.fill(px + 8, y - 2, px + PANEL_W - 8, y - 1, COL_SECTION);
-        ctx.drawText(textRenderer, "Внешний вид", px + 8, y + 1, COL_SUB, false);
-        // shift labels are drawn by the sliders themselves
-
-        super.render(ctx, mouseX, mouseY, delta);
+    @Override
+    public boolean shouldPause() {
+        // false = game keeps ticking = Minecraft does NOT activate the blur shader
+        return false;
     }
 
     // ---- helpers ----
 
-    private static Text toggleLabel(boolean enabled) {
-        return enabled ? Text.literal("✔ Вкл") : Text.literal("✘ Выкл");
+    private int getPanelX() { return (width - PANEL_W) / 2; }
+    private int getPanelY() { return Math.max(2, (height - getPanelH()) / 2); }
+    private int getPanelH() {
+        return 34 + TrackedItem.values().length * ROW_H
+                + 8 + (BTN_H + 2)   // customize btn
+                + 6 + (BTN_H + 2)   // save btn
+                + PAD;
     }
 
-    private static Text barsLabel(boolean show) {
-        return show ? Text.literal("▬ Шкалы: вкл") : Text.literal("▬ Шкалы: выкл");
+    static Text toggleText(boolean on) {
+        return on ? Text.literal("✔ Вкл") : Text.literal("✘ Выкл");
     }
 
-    private int computePanelH() {
-        int itemsH   = TrackedItem.values().length * ROW_H + 6;
-        int slidersH = (SLD_H + 4) * 5 + 6; // scale + opacity + R + G + B
-        int buttonsH = BTN_H + 6 + BTN_H + 6;
-        return 36 + itemsH + slidersH + buttonsH + 8;
-    }
-
-    // ---- generic named slider ----
-
-    private static abstract class NamedSlider extends SliderWidget {
-        private final String label;
-        private final float min;
-        private final float range;
-
-        NamedSlider(int x, int y, int w, int h, String label, float initial, float min, float max) {
-            super(x, y, w, h, Text.literal(""), (initial - min) / (max - min));
-            this.label = label;
-            this.min   = min;
-            this.range = max - min;
-            updateMessage(); // set initial text
-        }
-
-        float currentValue() {
-            return min + (float) value * range;
-        }
-
-        @Override
-        protected void updateMessage() {
-            float v = currentValue();
-            // Show integer for 0-255 fields, one decimal for scale
-            String formatted = (range > 2f) ? String.format("%.0f", v) : String.format("%.2f", v);
-            setMessage(Text.literal(label + ": " + formatted));
-        }
-
-        @Override
-        protected void applyValue() {
-            apply(currentValue());
-        }
-
-        protected abstract void apply(float v);
+    static void drawBorder(DrawContext ctx, int x, int y, int w, int h, int col) {
+        ctx.fill(x,         y,         x + w,     y + 1,     col);
+        ctx.fill(x,         y + h - 1, x + w,     y + h,     col);
+        ctx.fill(x,         y,         x + 1,     y + h,     col);
+        ctx.fill(x + w - 1, y,         x + w,     y + h,     col);
     }
 }
