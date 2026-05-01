@@ -3,8 +3,8 @@
   "id": "cooldownhud",
   "version": "${version}",
   "name": "CooldownHUD",
-  "description": "Отображает кулдауны предметов на HUD. Для фантайм серверов.",
-  "authors": ["You"],
+  "description": "funtime cooldowns",
+  "authors": ["by luminate"],
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
