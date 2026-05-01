@@ -14,10 +14,8 @@ public class CooldownHudClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Register HUD renderer
         HudRenderCallback.EVENT.register(CooldownHudRenderer.INSTANCE);
 
-        // Keybind: H → open settings
         openSettingsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "key.cooldownhud.settings",
             InputUtil.Type.KEYSYM,
@@ -25,33 +23,10 @@ public class CooldownHudClient implements ClientModInitializer {
             "category.cooldownhud"
         ));
 
-        // Tick: run TickTracker + check keybind
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             TickTracker.tick();
-
             while (openSettingsKey.wasPressed()) {
                 client.setScreen(new CooldownSettingsScreen(null));
-            }
-        });
-
-        // Mouse drag for HUD panel
-        ClientTickEvents.START_CLIENT_TICK.register(client -> {
-            if (client.currentScreen != null) return;
-            long window = client.getWindow().getHandle();
-            double[] mx = {0}, my = {0};
-            GLFW.glfwGetCursorPos(window, mx, my);
-
-            double scale = client.getWindow().getScaleFactor();
-            double gx = mx[0] / scale;
-            double gy = my[0] / scale;
-
-            boolean pressed = GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT)
-                              == GLFW.GLFW_PRESS;
-            if (pressed) {
-                CooldownHudRenderer.INSTANCE.onMousePress(gx, gy);
-                CooldownHudRenderer.INSTANCE.onMouseDrag(gx, gy);
-            } else {
-                CooldownHudRenderer.INSTANCE.onMouseRelease();
             }
         });
     }
